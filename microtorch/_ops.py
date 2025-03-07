@@ -8,7 +8,7 @@ __all__ = [
     "Add", "Sub", "Mul", "Div", "MatMul",
     "Exp", "Log", "Pow", "Tanh", "ReLU",
     "Sum",
-    "Transpose",
+    "Transpose", "Reshape",
 ]
 
 ArrayLike: TypeAlias = np.ndarray
@@ -188,4 +188,16 @@ class Transpose(Op):
     def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
         dim1, dim2 = self.retrieve_from_cache()
         dx = dy.swapaxes(dim1, dim2)
+        return tuple((dx,))
+
+
+class Reshape(Op):
+    def forward(self, x: ArrayLike, shape: tuple[int, ...]) -> ArrayLike:
+        self.save_to_cache(x.shape)
+        y = np.reshape(x, shape)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        (shape,) = self.retrieve_from_cache()
+        dx = np.reshape(dy, shape)
         return tuple((dx,))

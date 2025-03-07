@@ -90,6 +90,9 @@ class Tensor:
     def sum(self, axis: Optional[int | tuple[int, ...]] = None, *, keepdims: bool = False) -> Tensor:
         return _apply(Sum, self, axis=axis, keepdims=keepdims)
 
+    def reshape(self, shape: tuple[int, ...]) -> Tensor:
+        return _apply(Reshape, self, shape=shape)
+
     def accumulate_grad(self, dy: ArrayLike) -> None:
         self.grad = dy if self.grad is None else self.grad + dy
 
@@ -124,6 +127,9 @@ class Tensor:
 
     def detach(self) -> ArrayLike:
         return self.data
+
+    def t(self) -> Tensor:
+        return self.T
 
 
 def _align(x: Any) -> Tensor:
@@ -198,6 +204,14 @@ def uniform(*shape: int, low: float = -1, high: float = 1, requires_grad: bool =
 def randn(*shape: int, mean: float = 0, std: float = 1, requires_grad: bool = False) -> Tensor:
     data = np.random.normal(mean, std, shape)
     return Tensor(data, requires_grad=requires_grad)
+
+
+def tanh(x: Tensor) -> Tensor:
+    return x.tanh()
+
+
+def relu(x: Tensor) -> Tensor:
+    return x.relu()
 
 
 def mse_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
