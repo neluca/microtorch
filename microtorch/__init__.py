@@ -1,6 +1,6 @@
 from ._autograd import (
     Tensor, tensor, uniform, randn,
-    tanh, relu, mse_loss,
+    tanh, relu, softmax, mse_loss, cross_entropy
 )
 
 from ._modules import Module, Linear

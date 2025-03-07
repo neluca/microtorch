@@ -9,6 +9,7 @@ __all__ = [
     "Exp", "Log", "Pow", "Tanh", "ReLU",
     "Sum", "Max",
     "Transpose", "Reshape",
+    "Softmax", "MSELoss", "CrossEntropyLoss",
 ]
 
 ArrayLike: TypeAlias = np.ndarray
@@ -216,4 +217,65 @@ class Reshape(Op):
         dx = np.reshape(dy, shape)
         return tuple((dx,))
 
+
 # nn ops ---------------------------------------------------------------------------
+
+def _softmax_fwd(x: ArrayLike, dim: int) -> ArrayLike:
+    x = np.exp(x - x.max(dim, keepdims=True))
+    return x / x.sum(dim, keepdims=True)
+
+
+def _softmax_bwd(y: ArrayLike, dy: ArrayLike, dim: int) -> ArrayLike:
+    return y * (dy - (dy * y).sum(dim, keepdims=True))
+
+
+class Softmax(Op):
+    def forward(self, x: ArrayLike, *, dim: int) -> ArrayLike:
+        y = _softmax_fwd(x, dim)
+        self.save_to_cache(dim, y)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        dim, y = self.retrieve_from_cache()
+        dx = _softmax_bwd(y, dy, dim)
+        return tuple((dx,))
+
+
+class MSELoss(Op):
+    def forward(self, x: ArrayLike, y: ArrayLike, *, reduction: str) -> ArrayLike:
+        diff = x - y
+        loss = diff * diff
+        loss = loss.mean() if reduction == "mean" else loss.sum()
+        self.save_to_cache(x.size, diff, reduction)
+        return loss
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, None]:
+        x_size, diff, reduction = self.retrieve_from_cache()
+        dx = dy * 2.0 * diff
+        if reduction == "mean":
+            dx /= float(x_size)
+        return tuple((dx, None))
+
+
+def _onehot(x: ArrayLike, n: int, dtype: type):
+    return np.eye(n, dtype=dtype)[x]
+
+
+class CrossEntropyLoss(Op):
+    def forward(
+            self, x: ArrayLike, y: ArrayLike, *, eta: float, reduction: str
+    ) -> ArrayLike:
+        probs = _softmax_fwd(x, dim=-1)
+        y_onehot = _onehot(y, x.shape[-1], probs.dtype)
+        loss = -(np.log(probs + eta) * y_onehot).sum(-1)
+        loss = loss.mean() if reduction == "mean" else loss.sum()
+        self.save_to_cache(y, probs, reduction)
+        return loss
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, None]:
+        y, probs, reduction = self.retrieve_from_cache()
+        y = _onehot(y, probs.shape[-1], probs.dtype)
+        dx = dy * (probs - y)
+        if reduction == "mean":
+            dx /= np.prod(y.shape[:-1], dtype=dx.dtype)
+        return tuple((dx, None))

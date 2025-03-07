@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Any
+from typing import Optional, Any, Literal
 import numpy as np
 from ._ops import *
 
@@ -221,5 +221,22 @@ def relu(x: Tensor) -> Tensor:
     return x.relu()
 
 
-def mse_loss(y_pred: Tensor, y_true: Tensor) -> Tensor:
-    return ((y_pred - y_true) ** 2).sum() / y_pred.size
+def softmax(x: Tensor, *, dim: int = -1) -> Tensor:
+    return _apply(Softmax, x, dim=dim)
+
+
+def mse_loss(
+        logits: Tensor, targets: Tensor, reduction: Literal["sum", "mean"] = "mean"
+) -> Tensor:
+    assert not targets.requires_grad, "Targets cannot require gradients."
+    return _apply(MSELoss, logits, targets, reduction=reduction)
+
+
+def cross_entropy(
+        logits: Tensor,
+        targets: Tensor,
+        eta: float = 1e-8,
+        reduction: Literal["sum", "mean"] = "mean",
+) -> Tensor:
+    assert not targets.requires_grad, "Targets cannot require gradients."
+    return _apply(CrossEntropyLoss, logits, targets, eta=eta, reduction=reduction)

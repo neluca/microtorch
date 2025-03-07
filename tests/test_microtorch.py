@@ -348,3 +348,32 @@ def test_max():
     # Assertions
     assert np.allclose(y_t.detach().numpy(), y_mt.detach()), "Max results do not match."
     assert np.allclose(x_t.grad.numpy(), x_mt.grad), "Gradients do not match."
+
+
+def test_cross_entropy():
+    # Create random logits and labels
+    logits = np.random.rand(5, 3)  # 5 samples, 3 classes
+    labels = np.random.randint(0, 3, size=(5,))  # 5 samples, labels from 0 to 2
+
+    # Convert to pytorch tensors
+    logits_t = torch.tensor(logits, requires_grad=True)
+    labels_t = torch.tensor(labels, requires_grad=False, dtype=torch.long)
+
+    # Convert to microtorch tensors
+    logits_mt = microtorch.tensor(logits, requires_grad=True)
+    labels_mt = microtorch.tensor(labels, requires_grad=False)
+
+    # Compute loss using pytorch
+    loss_t = torch.nn.functional.cross_entropy(logits_t, labels_t)
+    loss_t.backward()
+
+    # Compute loss using microtorch (assuming cross_entropy is implemented)
+    loss_mt = microtorch.cross_entropy(logits_mt, labels_mt)
+    loss_mt.sum().backward()
+
+    assert np.allclose(
+        loss_t.detach().numpy(), loss_mt.detach(), atol=1e-5
+    ), "Cross-entropy Loss results do not match."
+    assert np.allclose(
+        logits_t.grad.numpy(), logits_mt.grad, atol=1e-7
+    ), "Gradients do not match."
