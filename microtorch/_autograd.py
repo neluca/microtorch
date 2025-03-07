@@ -122,6 +122,9 @@ class Tensor:
     def __hash__(self) -> int:
         return id(self)
 
+    def detach(self) -> ArrayLike:
+        return self.data
+
 
 def _align(x: Any) -> Tensor:
     if isinstance(x, Tensor):

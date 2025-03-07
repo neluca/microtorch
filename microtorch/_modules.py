@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from ._autograd import Tensor, randn, uniform
+from ._autograd import Tensor, uniform
 import math
 
 
