@@ -1,2 +1,2 @@
 # microtorch
-# A pytoch-like autograd engine.
+A pytoch-like autograd engine.
