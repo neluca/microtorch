@@ -9,7 +9,7 @@ __all__ = [
     "Add", "Sub", "Mul", "Div", "MatMul",
     "Exp", "Log", "Pow", "Tanh", "ReLU",
     "Sum", "Max", "Mean",
-    "Transpose", "Reshape", "Concat", "Stack",
+    "Transpose", "Reshape", "Select", "Concat", "Stack",
     "Softmax", "MSELoss", "CrossEntropyLoss",
 ]
 
@@ -230,6 +230,19 @@ class Reshape(Op):
     def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
         (shape,) = self.retrieve_from_cache()
         dx = np.reshape(dy, shape)
+        return tuple((dx,))
+
+
+class Select(Op):
+    def forward(self, x: ArrayLike, *, key: Any) -> ArrayLike:
+        y = x[key]
+        self.save_to_cache(x.shape, key)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        x_shape, key = self.retrieve_from_cache()
+        dx = np.zeros(x_shape, dtype=dy.dtype)
+        np.add.at(dx, key, dy)
         return tuple((dx,))
 
 

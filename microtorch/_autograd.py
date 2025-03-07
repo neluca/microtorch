@@ -4,6 +4,28 @@ from typing import Optional, Any, Literal
 import numpy as np
 from ._ops import *
 
+_autograd_tracking_active: bool = True
+
+
+def no_grad():
+    class _Context:
+        def __call__(self, func):
+            def wrapper(*args, **kwargs):
+                with _Context():
+                    return func(*args, **kwargs)
+
+            return wrapper
+
+        def __enter__(self):
+            global _autograd_tracking_active
+            _autograd_tracking_active = False
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            global _autograd_tracking_active
+            _autograd_tracking_active = True
+
+    return _Context()
+
 
 class Tensor:
     def __init__(
@@ -75,6 +97,14 @@ class Tensor:
     def __pow__(self, power: int | float) -> Tensor:
         return _apply(Pow, self, power=power)
 
+    def __getitem__(self, item: Any) -> Tensor:
+        return _apply(Select, self, key=_parse_key(item))
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        if isinstance(value, Tensor):
+            value = value.data
+        self.data[_parse_key(key)] = value
+
     def exp(self) -> Tensor:
         return _apply(Exp, self)
 
@@ -131,6 +161,9 @@ class Tensor:
     def __hash__(self) -> int:
         return id(self)
 
+    def __len__(self) -> int:
+        return len(self.data)
+
     def detach(self) -> ArrayLike:
         return self.data
 
@@ -139,6 +172,14 @@ class Tensor:
 
     def item(self) -> Any:
         return self.data.item()
+
+    def float(self) -> Tensor:
+        self.data = self.data.astype(np.float32)
+        return self
+
+    def long(self):
+        self.data = self.data.astype(np.int16)
+        return self
 
 
 def _align(x: Any) -> Tensor:
@@ -155,7 +196,7 @@ def _apply(op_: type(Op), *tensors: Optional[Tensor], **kwargs: Any) -> Tensor:
     data = op.forward(*fwd_args, **kwargs)
 
     result_req_grad = any(t.requires_grad for t in tensor_args)
-    if result_req_grad:
+    if _autograd_tracking_active and result_req_grad:
         return Tensor(data, op=op, src=tensors, requires_grad=True)
 
     return Tensor(data)
@@ -193,6 +234,14 @@ def _undo_broadcast(grad: ArrayLike, target_shape: tuple[int, ...]) -> ArrayLike
     return grad.reshape(target_shape)
 
 
+def _parse_key(key: Any) -> Any:
+    if isinstance(key, tuple):
+        return tuple(k.data if isinstance(k, Tensor) else k for k in key)
+    if isinstance(key, Tensor):
+        return key.data
+    return key
+
+
 def tensor(data: Any, requires_grad=False) -> Tensor:
     if requires_grad:
         if isinstance(data, np.ndarray):
@@ -213,6 +262,14 @@ def uniform(*shape: int, low: float = -1, high: float = 1, requires_grad: bool =
 def randn(*shape: int, mean: float = 0, std: float = 1, requires_grad: bool = False) -> Tensor:
     data = np.random.normal(mean, std, shape)
     return Tensor(data, requires_grad=requires_grad)
+
+
+def argmax(_tensor: Tensor, axis=None) -> Tensor:
+    return Tensor(np.array(np.argmax(_tensor.data, axis=axis)))
+
+
+def arange(*args, requires_grad=False) -> Tensor:
+    return Tensor(np.arange(*args), requires_grad=requires_grad)
 
 
 def concat(tensors: list[Tensor], dim: int = 0):
