@@ -415,3 +415,41 @@ def test_stack_with_square():
     assert np.allclose(
         y_t.grad.numpy(), y_mt.grad.data
     ), "Gradients for y do not match between pytorch and microtorch."
+
+
+def test_concat_with_square():
+    x = np.random.rand(3, 3)
+    y = np.random.rand(3, 3)
+
+    # Convert to pytorch tensors
+    x_t = torch.tensor(x, requires_grad=True)
+    y_t = torch.tensor(y, requires_grad=True)
+
+    # Perform stack operation in pytorch
+    z_t = torch.concat([x_t, y_t], dim=0)
+    z_t = z_t ** 2  # Square the tensor
+    z_t.sum().backward()
+
+    # Assuming you've implemented stack and power operation in microtorch
+    # Convert to microtorch tensors
+    x_mt = microtorch.tensor(x, requires_grad=True)
+    y_mt = microtorch.tensor(y, requires_grad=True)
+
+    # Perform stack operation in microtorch
+    z_mt = microtorch.concat([x_mt, y_mt], dim=0)
+    z_mt = z_mt ** 2  # Square the tensor
+    z_mt.sum().backward()
+
+    # Verify that the output from pytorch and microtorch are the same
+    assert np.allclose(
+        z_t.detach().numpy(), z_mt.data
+    ), "Concat operation results do not match between pytorch and microtorch."
+
+    # Verify that the gradients are the same for both pytorch and microtorch
+    assert np.allclose(
+        x_t.grad.numpy(), x_mt.grad.data
+    ), "Gradients for x do not match between pytorch and microtorch."
+
+    assert np.allclose(
+        y_t.grad.numpy(), y_mt.grad.data
+    ), "Gradients for y do not match between pytorch and microtorch."

@@ -8,7 +8,7 @@ __all__ = [
     "ArrayLike", "Op",
     "Add", "Sub", "Mul", "Div", "MatMul",
     "Exp", "Log", "Pow", "Tanh", "ReLU",
-    "Sum", "Max",
+    "Sum", "Max", "Mean",
     "Transpose", "Reshape", "Concat", "Stack",
     "Softmax", "MSELoss", "CrossEntropyLoss",
 ]
@@ -194,6 +194,20 @@ class Max(Op):
         return tuple((dx,))
 
 
+class Mean(Op):
+    def forward(self, x: ArrayLike, *, dim: Optional[int | tuple[int, ...]], keepdims: bool) -> ArrayLike:
+        y = x.mean(dim, keepdims=keepdims)
+        self.save_to_cache(x.shape, dim, keepdims, x.size / y.size)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        x_shape, dim, keepdims, size = self.retrieve_from_cache()
+        if not keepdims and dim is not None:
+            dy = np.expand_dims(dy, dim)
+        dx = np.broadcast_to(dy / size, x_shape)
+        return tuple((dx,))
+
+
 # movement ops ---------------------------------------------------------------------------
 class Transpose(Op):
     def forward(self, x: ArrayLike, *, dim1: int, dim2: int) -> ArrayLike:
@@ -245,7 +259,6 @@ class Stack(Op):
 
 
 # nn ops ---------------------------------------------------------------------------
-
 def _softmax_fwd(x: ArrayLike, dim: int) -> ArrayLike:
     x = np.exp(x - x.max(dim, keepdims=True))
     return x / x.sum(dim, keepdims=True)
