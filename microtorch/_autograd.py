@@ -87,8 +87,11 @@ class Tensor:
     def relu(self) -> Tensor:
         return _apply(ReLU, self)
 
-    def sum(self, axis: Optional[int | tuple[int, ...]] = None, *, keepdims: bool = False) -> Tensor:
-        return _apply(Sum, self, axis=axis, keepdims=keepdims)
+    def sum(self, dim: Optional[int | tuple[int, ...]] = None, *, keepdims: bool = False) -> Tensor:
+        return _apply(Sum, self, dim=dim, keepdims=keepdims)
+
+    def max(self, dim: Optional[int | tuple[int, ...]] = None, *, keepdims: bool = False) -> Tensor:
+        return _apply(Max, self, dim=dim, keepdims=keepdims)
 
     def reshape(self, shape: tuple[int, ...]) -> Tensor:
         return _apply(Reshape, self, shape=shape)
@@ -130,6 +133,10 @@ class Tensor:
 
     def t(self) -> Tensor:
         return self.T
+
+    def item(self):
+        assert self.size == 1, "item can not be called on non 1 tensor"
+        return self.data
 
 
 def _align(x: Any) -> Tensor:

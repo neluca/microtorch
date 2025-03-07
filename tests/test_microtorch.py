@@ -142,7 +142,7 @@ def test_sum_axis(axis=1):
     z_t = x_t.sum(dim=axis)
     z_t.sum().backward()  # Summing again to get a scalar for backward()
 
-    z_mt = x_mt.sum(axis=axis)
+    z_mt = x_mt.sum(dim=axis)
     z_mt.sum().backward()  # Summing again to get a scalar for backward()
 
     assert np.allclose(
@@ -326,3 +326,25 @@ def test_transpose():
     assert np.allclose(
         x_t.grad.numpy(), x_mt.grad
     ), "Gradients do not match between pytorch and microtorch."
+
+
+def test_max():
+    x = np.random.rand(2, 3)  # Create a random 2x3 array
+    dim = 1  # Axis along which to compute max
+
+    x_t = torch.tensor(x, requires_grad=True)  # Create a pytorch tensor
+    x_mt = microtorch.tensor(x, requires_grad=True)  # Create a microtorch tensor
+
+    # Compute max using pytorch
+    y_t, _ = torch.max(x_t, dim=dim)
+    loss_t = y_t.sum()
+    loss_t.backward()
+
+    # Compute max using microtorch
+    y_mt = x_mt.max(dim=dim)
+    loss_mt = y_mt.sum()
+    loss_mt.backward()
+
+    # Assertions
+    assert np.allclose(y_t.detach().numpy(), y_mt.detach()), "Max results do not match."
+    assert np.allclose(x_t.grad.numpy(), x_mt.grad), "Gradients do not match."

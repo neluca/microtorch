@@ -7,7 +7,7 @@ __all__ = [
     "ArrayLike", "Op",
     "Add", "Sub", "Mul", "Div", "MatMul",
     "Exp", "Log", "Pow", "Tanh", "ReLU",
-    "Sum",
+    "Sum", "Max",
     "Transpose", "Reshape",
 ]
 
@@ -165,16 +165,30 @@ class ReLU(Op):
 
 # reduce ops ---------------------------------------------------------------------------
 class Sum(Op):
-    def forward(self, x: ArrayLike, *, axis: Optional[int | tuple[int, ...]], keepdims: bool) -> ArrayLike:
-        y = x.sum(axis, keepdims=keepdims)
-        self.save_to_cache(x.shape, axis, keepdims)
+    def forward(self, x: ArrayLike, *, dim: Optional[int | tuple[int, ...]], keepdims: bool) -> ArrayLike:
+        y = x.sum(dim, keepdims=keepdims)
+        self.save_to_cache(x.shape, dim, keepdims)
         return y
 
     def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
-        x_shape, axis, keepdims = self.retrieve_from_cache()
-        if not keepdims and axis is not None:
-            dy = np.expand_dims(dy, axis)
+        x_shape, dim, keepdims = self.retrieve_from_cache()
+        if not keepdims and dim is not None:
+            dy = np.expand_dims(dy, dim)
         dx = np.broadcast_to(dy, x_shape)
+        return tuple((dx,))
+
+
+class Max(Op):
+    def forward(self, x: ArrayLike, *, dim: Optional[int], keepdims: bool) -> ArrayLike:
+        y = x.max(dim, keepdims=True)
+        self.save_to_cache(dim, keepdims, x == y)
+        return y if keepdims else y.squeeze()
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        dim, keepdims, mask = self.retrieve_from_cache()
+        if not keepdims and dim is not None:
+            dy = np.expand_dims(dy, dim)
+        dx = mask * dy / mask.sum(dim, dtype=dy.dtype, keepdims=True)
         return tuple((dx,))
 
 
@@ -201,3 +215,5 @@ class Reshape(Op):
         (shape,) = self.retrieve_from_cache()
         dx = np.reshape(dy, shape)
         return tuple((dx,))
+
+# nn ops ---------------------------------------------------------------------------
