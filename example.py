@@ -30,14 +30,14 @@ optimizer = optim.SGD(model.parameters(), lr=0.03)
 # We want the output to get close to 1.0 over time.
 y_true = 1.0
 
-for epoch in range(20):
+for epoch in range(30):
     # Reset (zero out) all accumulated gradients before each update.
     optimizer.zero_grad()
 
     # --- Forward pass ---
     # prediction = xW^T + b
     y_pred = model(x)
-    print(f"Epoch {epoch}: {y_pred}")
+    print(f"Epoch {epoch}: {y_pred.item()}")
 
     # Define a simple mean squared error function
     loss = ((y_pred - y_true) ** 2).mean()
@@ -60,4 +60,4 @@ gradient = model.fc.parameters()[0].grad
 print("[After Training] Gradients for fc weights:", gradient)
 print("[After Training] layer weights:", weights)
 print("[After Training] layer bias:", bias)
-print(x.data @ weights.data.T + bias.data)
+print((x @ weights.T + bias).item())
