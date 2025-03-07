@@ -1,5 +1,6 @@
 from ._autograd import (
     Tensor, tensor, uniform, randn,
+    concat, stack,
     tanh, relu, softmax, mse_loss, cross_entropy
 )
 

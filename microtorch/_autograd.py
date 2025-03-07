@@ -213,6 +213,14 @@ def randn(*shape: int, mean: float = 0, std: float = 1, requires_grad: bool = Fa
     return Tensor(data, requires_grad=requires_grad)
 
 
+def concat(tensors: list[Tensor], dim: int = 0):
+    return _apply(Concat, *tensors, dim=dim)
+
+
+def stack(tensors: list[Tensor], dim: int = 0):
+    return _apply(Stack, *tensors, dim=dim)
+
+
 def tanh(x: Tensor) -> Tensor:
     return x.tanh()
 

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from itertools import accumulate
 from typing import Any, Optional, TypeAlias
 
 import numpy as np
@@ -8,7 +9,7 @@ __all__ = [
     "Add", "Sub", "Mul", "Div", "MatMul",
     "Exp", "Log", "Pow", "Tanh", "ReLU",
     "Sum", "Max",
-    "Transpose", "Reshape",
+    "Transpose", "Reshape", "Concat", "Stack",
     "Softmax", "MSELoss", "CrossEntropyLoss",
 ]
 
@@ -216,6 +217,31 @@ class Reshape(Op):
         (shape,) = self.retrieve_from_cache()
         dx = np.reshape(dy, shape)
         return tuple((dx,))
+
+
+class Concat(Op):
+    def forward(self, *arrays: ArrayLike, dim: int) -> ArrayLike:
+        y = np.concatenate(arrays, dim)
+        self.save_to_cache(dim, [a.shape[dim] for a in arrays])
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        dim, split_sizes = self.retrieve_from_cache()
+        split_indices = list(accumulate(s for s in split_sizes))
+        dxs = np.split(dy, split_indices, dim)
+        return tuple(dxs)
+
+
+class Stack(Op):
+    def forward(self, *arrays: ArrayLike | bool, dim: int) -> ArrayLike:
+        y = np.stack(arrays, dim)
+        self.save_to_cache(dim)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        (dim,) = self.retrieve_from_cache()
+        dxs = tuple(np.moveaxis(dy, dim, 0))
+        return tuple(dxs)
 
 
 # nn ops ---------------------------------------------------------------------------
