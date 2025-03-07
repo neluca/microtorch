@@ -1,4 +1,4 @@
-from microtorch import tensor
+from microtorch import tensor, mse_loss
 import microtorch as nn
 import microtorch as optim
 import numpy as np
@@ -40,7 +40,7 @@ for epoch in range(30):
     print(f"Epoch {epoch}: {y_pred.item()}")
 
     # Define a simple mean squared error function
-    loss = ((y_pred - y_true) ** 2).mean()
+    loss = mse_loss(y_pred, tensor(y_true))
 
     # --- Backward pass ---
     # Ultimately we need to compute the gradient of the loss with respect to the weights
