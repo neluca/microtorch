@@ -1,7 +1,7 @@
 from microtorch import tensor, mse_loss
 import microtorch as nn
 import microtorch as optim
-import numpy as np
+from tools import draw_to_html
 
 
 class SimpleNN(nn.Module):
@@ -18,11 +18,14 @@ class SimpleNN(nn.Module):
 
 # Create a sample input tensor x with shape (1, 3).
 # 'requires_grad=True' means we want to track gradients for x.
-x = tensor([[-1.0, 0.0, 2.0]], requires_grad=True)
+x = tensor([[-1.0, 0.0, 2.0]])
 
 # Initialize the simple neural network.
 # This layer has a weight matrix W of shape (3, 1) and a bias of shape (1,).
 model = SimpleNN(input_dim=3, output_dim=1)
+
+# Draw the computational graph of the model.
+draw_to_html(model(x), "model")
 
 # Use SGD with a learning rate of 0.03
 optimizer = optim.SGD(model.parameters(), lr=0.03)
@@ -60,4 +63,5 @@ gradient = model.fc.parameters()[0].grad
 print("[After Training] Gradients for fc weights:", gradient)
 print("[After Training] layer weights:", weights)
 print("[After Training] layer bias:", bias)
+
 print((x @ weights.T + bias).item())

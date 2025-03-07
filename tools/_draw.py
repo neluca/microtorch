@@ -1,5 +1,5 @@
 from typing import Literal
-from ._autograd import Tensor
+from microtorch._autograd import Tensor
 from ._mermaid import Mermaid
 
 _node_colors = {
