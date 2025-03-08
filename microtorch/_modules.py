@@ -37,6 +37,55 @@ class Module(ABC):
     def __call__(self, *tensors: Tensor) -> Tensor:
         return self.forward(*tensors)
 
+    def _state_dict(self) -> dict[str, Parameter]:
+        def _assign(root: dict, d: dict):
+            for key, value in d.items():
+                root[key] = value
+
+        def _get_params(root: Module, prefix=""):
+            _state: dict[str, Parameter] = {}
+            for key, value in root.__dict__.items():
+                if isinstance(value, Parameter):
+                    key_str = f"{prefix}.{key}" if prefix != "" else f"{key}"
+                    _state[key_str] = value
+                elif isinstance(value, ModuleList):
+                    module_list = [
+                        _get_params(m, f"{prefix}.{key}.{idx}" if prefix != "" else f"{key}.{idx}")
+                        for idx, m in enumerate(value)
+                    ]
+                    for _module in module_list:
+                        _assign(_state, _module)
+                elif isinstance(value, Module):
+                    _assign(_state, _get_params(value, f"{prefix}.{key}" if prefix != "" else f"{key}"))
+            return _state
+
+        return _get_params(self)
+
+    def state_dict(self):
+        _state = self._state_dict()
+        for key, value in _state.items():
+            _state[key] = value.clone()
+        return _state
+
+    def load_state_dict(self, state_dict: dict) -> None:
+        own_state = self._state_dict()
+        missing_keys = set(own_state.keys()) - set(state_dict.keys())
+        unexpected_keys = set(state_dict.keys()) - set(own_state.keys())
+        msg = ""
+        if missing_keys:
+            msg += f"Missing keys in state_dict: {missing_keys}\n"
+        if unexpected_keys:
+            msg += f"Unexpected keys in state_dict: {unexpected_keys}\n"
+        if msg:
+            raise KeyError("Error(s) in loading state_dict:\n" + msg)
+
+        for key, value in state_dict.items():
+            own_state[key].data = value.data.copy()
+
+    def register_buffer(self, name: str, value: Tensor):
+        value = value.clone() if isinstance(value, Tensor) else value
+        setattr(self, name, value)
+
 
 class ModuleList(list):
     def __init__(self, modules: Iterable[Module]) -> None:

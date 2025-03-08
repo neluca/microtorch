@@ -193,6 +193,9 @@ class Tensor:
         self.data = self.data.astype(np.int16)
         return self
 
+    def clone(self, requires_grad: bool = False) -> Tensor:
+        return Tensor(self.data.copy(), requires_grad=requires_grad)
+
 
 def _align(x: Any) -> Tensor:
     if isinstance(x, Tensor):
