@@ -35,7 +35,7 @@ class Tensor:
             src: Optional[tuple[Optional[Tensor], ...]] = None,
             requires_grad: bool = False
     ) -> None:
-        self.data = data
+        self.data = data if isinstance(data, ArrayLike) else np.asarray(data)
         self.op = op
         self.src = src
         self.requires_grad = requires_grad
@@ -105,11 +105,23 @@ class Tensor:
             value = value.data
         self.data[_parse_key(key)] = value
 
+    def split(self, split_size: int, *, dim: int = -1) -> list[Tensor]:
+        dim = dim % self.ndim
+        pre_dim_slice = (slice(None),) * dim
+        post_dim_slice = (slice(None),) * (self.ndim - dim - 1)
+        return [
+            self[pre_dim_slice + (slice(i, i + split_size),) + post_dim_slice]
+            for i in range(0, self.shape[dim], split_size)
+        ]
+
     def exp(self) -> Tensor:
         return _apply(Exp, self)
 
     def log(self) -> Tensor:
         return _apply(Log, self)
+
+    def sigmoid(self) -> Tensor:
+        return _apply(Sigmoid, self)
 
     def tanh(self) -> Tensor:
         return _apply(Tanh, self)
@@ -264,11 +276,21 @@ def randn(*shape: int, mean: float = 0, std: float = 1, requires_grad: bool = Fa
     return Tensor(data, requires_grad=requires_grad)
 
 
+def zeros(*shape: int, requires_grad: bool = False) -> Tensor:
+    data = np.zeros(shape, dtype=np.float32)
+    return Tensor(data, requires_grad=requires_grad)
+
+
+def ones(*shape: int, requires_grad: bool = False) -> Tensor:
+    data = np.ones(shape, dtype=np.float32)
+    return Tensor(data, requires_grad=requires_grad)
+
+
 def argmax(_tensor: Tensor, axis=None) -> Tensor:
     return Tensor(np.array(np.argmax(_tensor.data, axis=axis)))
 
 
-def arange(*args, requires_grad=False) -> Tensor:
+def arange(*args: int | float, requires_grad=False) -> Tensor:
     return Tensor(np.arange(*args), requires_grad=requires_grad)
 
 
@@ -278,6 +300,10 @@ def concat(tensors: list[Tensor], dim: int = 0):
 
 def stack(tensors: list[Tensor], dim: int = 0):
     return _apply(Stack, *tensors, dim=dim)
+
+
+def sigmoid(x: Tensor) -> Tensor:
+    return x.sigmoid()
 
 
 def tanh(x: Tensor) -> Tensor:
@@ -290,6 +316,10 @@ def relu(x: Tensor) -> Tensor:
 
 def softmax(x: Tensor, *, dim: int = -1) -> Tensor:
     return _apply(Softmax, x, dim=dim)
+
+
+def dropout(x: Tensor, *, p: float = 0.9) -> Tensor:
+    return _apply(Dropout, x, p=p)
 
 
 def mse_loss(

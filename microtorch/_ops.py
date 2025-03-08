@@ -7,10 +7,10 @@ import numpy as np
 __all__ = [
     "ArrayLike", "Op",
     "Add", "Sub", "Mul", "Div", "MatMul",
-    "Exp", "Log", "Pow", "Tanh", "ReLU",
+    "Exp", "Log", "Pow", "Sigmoid", "Tanh", "ReLU",
     "Sum", "Max", "Mean",
     "Transpose", "Reshape", "Select", "Concat", "Stack",
-    "Softmax", "MSELoss", "CrossEntropyLoss",
+    "Softmax", "MSELoss", "CrossEntropyLoss", "Dropout",
 ]
 
 ArrayLike: TypeAlias = np.ndarray
@@ -138,6 +138,18 @@ class Pow(Op):
     def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
         x, power = self.retrieve_from_cache()
         dx = dy * power * x ** (power - 1)
+        return tuple((dx,))
+
+
+class Sigmoid(Op):
+    def forward(self, x: ArrayLike) -> ArrayLike:
+        y = 1 / (1 + np.exp(-x))
+        self.save_to_cache(y)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        (y,) = self.retrieve_from_cache()
+        dx = dy * y * (1 - y)
         return tuple((dx,))
 
 
@@ -331,3 +343,16 @@ class CrossEntropyLoss(Op):
         if reduction == "mean":
             dx /= np.prod(y.shape[:-1], dtype=dx.dtype)
         return tuple((dx, None))
+
+
+class Dropout(Op):
+    def forward(self, x: ArrayLike, *, p: float) -> ArrayLike:
+        dropout_mask = np.random.rand(x.shape) > p
+        y = x * dropout_mask / (1 - p)
+        self.save_to_cache(p, dropout_mask)
+        return y
+
+    def backward(self, dy: ArrayLike) -> tuple[ArrayLike, ...]:
+        p, dropout_mask = self.retrieve_from_cache()
+        dx = dy * dropout_mask / (1 - p)
+        return tuple((dx,))

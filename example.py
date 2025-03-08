@@ -10,14 +10,14 @@ class SimpleNN(nn.Module):
         # Mathematically: fc(x) = xW^T + b
         # where W is weight and b is bias.
         self.fc = nn.Linear(input_dim, output_dim)
+        self.ac = nn.Tanh()
 
     def forward(self, x):
         # Simply compute xW^T + b without any additional activation.
-        return self.fc(x)
+        return self.ac(self.fc(x))
 
 
 # Create a sample input tensor x with shape (1, 3).
-# 'requires_grad=True' means we want to track gradients for x.
 x = tensor([[-1.0, 0.0, 2.0]])
 
 # Initialize the simple neural network.

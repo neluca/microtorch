@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from ._autograd import Tensor, uniform
+from ._autograd import Tensor, uniform, dropout, softmax, zeros, stack
 import math
 
 
@@ -43,6 +43,16 @@ class ModuleList(list):
         super().__init__(modules)
 
 
+class Sequential(Module):
+    def __init__(self, *layers: Module):
+        self.layers = ModuleList(layers)
+
+    def forward(self, x: Tensor) -> Tensor:
+        for layer in self.layers:
+            x = layer(x)
+        return x
+
+
 class Linear(Module):
     def __init__(self, in_dim: int, out_dim: int, bias: bool = True) -> None:
         self.in_dim = in_dim
@@ -60,3 +70,57 @@ class Linear(Module):
         if self.bias:
             x = x + self.b
         return x
+
+
+class Sigmoid(Module):
+    def forward(self, x: Tensor) -> Tensor:
+        return x.sigmoid()
+
+
+class Tanh(Module):
+    def forward(self, x: Tensor) -> Tensor:
+        return x.tanh()
+
+
+class ReLU(Module):
+    def forward(self, x: Tensor) -> Tensor:
+        return x.relu()
+
+
+class Dropout(Module):
+    def __init__(self, p: float):
+        self.p = p
+
+    def forward(self, x: Tensor) -> Tensor:
+        return dropout(x, p=self.p)
+
+
+class Softmax(Module):
+    def __init__(self, dim: int):
+        self.dim = dim
+
+    def forward(self, x: Tensor) -> Tensor:
+        return softmax(x, dim=self.dim)
+
+
+class RNN(Module):
+    def __init__(self, in_dim: int, hidden_dim: int, return_seq: bool = False) -> None:
+        self.in_dim = in_dim
+        self.hidden_dim = hidden_dim
+        self.return_seq = return_seq
+
+        self.W_xh = Linear(in_dim, 4 * hidden_dim, bias=False)
+        self.W_hh = Linear(hidden_dim, 4 * hidden_dim)
+
+    def forward(self, x: Tensor) -> Tensor:
+        B, T, _ = x.shape
+        h = []
+        h_t = zeros(B, self.hidden_dim)
+        xh = self.W_xh(x)
+        for t in range(T):
+            xh_t = xh[:, t]
+            hh_t = self.W_hh(h_t)
+            h_t = (xh_t + hh_t).tanh()
+            if self.return_seq:
+                h.append(h_t)
+        return stack(*h, dim=1) if self.return_seq else h_t

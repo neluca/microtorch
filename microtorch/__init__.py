@@ -1,11 +1,14 @@
 from ._autograd import (
-    Tensor, no_grad, tensor, uniform, randn,
+    Tensor, no_grad, tensor, uniform, randn, zeros, ones,
     argmax, arange,
     concat, stack,
-    tanh, relu, softmax, mse_loss, cross_entropy
+    tanh, relu, softmax, dropout, mse_loss, cross_entropy
 )
 
-from ._modules import Module, Linear
+from ._modules import (
+    Module, ModuleList, Sequential,
+    Linear, Sigmoid, Tanh, ReLU, Dropout, Softmax
+)
 
 from ._optim import Optimizer, SGD, Adam
 
