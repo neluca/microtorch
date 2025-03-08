@@ -5,7 +5,7 @@ from typing import Any, Optional, TypeAlias
 import numpy as np
 
 __all__ = [
-    "ArrayLike", "Op",
+    "ArrayLike", "Function",
     "Add", "Sub", "Mul", "Div", "MatMul",
     "Exp", "Log", "Pow", "Sigmoid", "Tanh", "ReLU",
     "Sum", "Max", "Mean",
@@ -16,7 +16,7 @@ __all__ = [
 ArrayLike: TypeAlias = np.ndarray
 
 
-class Op(ABC):
+class Function(ABC):
     def __init__(self, op_args: Any) -> None:
         self.op_args = op_args  # graph
         self._cache: Any = None
@@ -43,7 +43,7 @@ class Op(ABC):
 
 
 # binary ops ---------------------------------------------------------------------------
-class Add(Op):
+class Add(Function):
     def forward(self, x1: ArrayLike, x2: ArrayLike) -> ArrayLike:
         y = x1 + x2
         return y
@@ -54,7 +54,7 @@ class Add(Op):
         return tuple((dx1, dx2))
 
 
-class Sub(Op):
+class Sub(Function):
     def forward(self, x1: ArrayLike, x2: ArrayLike) -> ArrayLike:
         y = x1 - x2
         return y
@@ -65,7 +65,7 @@ class Sub(Op):
         return tuple((dx1, dx2))
 
 
-class Mul(Op):
+class Mul(Function):
     def forward(self, x1: ArrayLike, x2: ArrayLike) -> ArrayLike:
         y = x1 * x2
         self.save_to_cache(x1, x2)
@@ -78,7 +78,7 @@ class Mul(Op):
         return tuple((dx1, dx2))
 
 
-class Div(Op):
+class Div(Function):
     def forward(self, x1: ArrayLike, x2: ArrayLike) -> ArrayLike:
         y = x1 / x2
         self.save_to_cache(x1, x2)
@@ -91,7 +91,7 @@ class Div(Op):
         return tuple((dx1, dx2))
 
 
-class MatMul(Op):
+class MatMul(Function):
     def forward(self, x1: ArrayLike, x2: ArrayLike) -> ArrayLike:
         y = x1 @ x2
         self.save_to_cache(x1, x2)
@@ -105,7 +105,7 @@ class MatMul(Op):
 
 
 # unary ops ---------------------------------------------------------------------------
-class Exp(Op):
+class Exp(Function):
     def forward(self, x: ArrayLike) -> ArrayLike:
         y = np.exp(x)
         self.save_to_cache(y)
@@ -117,7 +117,7 @@ class Exp(Op):
         return tuple((dx,))
 
 
-class Log(Op):
+class Log(Function):
     def forward(self, x: ArrayLike) -> ArrayLike:
         y = np.log(x)
         self.save_to_cache(x)
@@ -129,7 +129,7 @@ class Log(Op):
         return tuple((dx,))
 
 
-class Pow(Op):
+class Pow(Function):
     def forward(self, x: ArrayLike, *, power: int | float) -> ArrayLike:
         y = x ** power
         self.save_to_cache(x, power)
@@ -141,7 +141,7 @@ class Pow(Op):
         return tuple((dx,))
 
 
-class Sigmoid(Op):
+class Sigmoid(Function):
     def forward(self, x: ArrayLike) -> ArrayLike:
         y = 1 / (1 + np.exp(-x))
         self.save_to_cache(y)
@@ -153,7 +153,7 @@ class Sigmoid(Op):
         return tuple((dx,))
 
 
-class Tanh(Op):
+class Tanh(Function):
     def forward(self, x: ArrayLike) -> ArrayLike:
         y = np.tanh(x)
         self.save_to_cache(y)
@@ -165,7 +165,7 @@ class Tanh(Op):
         return tuple((dx,))
 
 
-class ReLU(Op):
+class ReLU(Function):
     def forward(self, x: ArrayLike) -> ArrayLike:
         y = np.maximum(x, 0.0)
         self.save_to_cache(y == x)
@@ -178,7 +178,7 @@ class ReLU(Op):
 
 
 # reduce ops ---------------------------------------------------------------------------
-class Sum(Op):
+class Sum(Function):
     def forward(self, x: ArrayLike, *, dim: Optional[int | tuple[int, ...]], keepdims: bool) -> ArrayLike:
         y = x.sum(dim, keepdims=keepdims)
         self.save_to_cache(x.shape, dim, keepdims)
@@ -192,7 +192,7 @@ class Sum(Op):
         return tuple((dx,))
 
 
-class Max(Op):
+class Max(Function):
     def forward(self, x: ArrayLike, *, dim: Optional[int], keepdims: bool) -> ArrayLike:
         y = x.max(dim, keepdims=True)
         self.save_to_cache(dim, keepdims, x == y)
@@ -206,7 +206,7 @@ class Max(Op):
         return tuple((dx,))
 
 
-class Mean(Op):
+class Mean(Function):
     def forward(self, x: ArrayLike, *, dim: Optional[int | tuple[int, ...]], keepdims: bool) -> ArrayLike:
         y = x.mean(dim, keepdims=keepdims)
         self.save_to_cache(x.shape, dim, keepdims, x.size / y.size)
@@ -221,7 +221,7 @@ class Mean(Op):
 
 
 # movement ops ---------------------------------------------------------------------------
-class Transpose(Op):
+class Transpose(Function):
     def forward(self, x: ArrayLike, *, dim1: int, dim2: int) -> ArrayLike:
         y = x.swapaxes(dim1, dim2)
         self.save_to_cache(dim1, dim2)
@@ -233,7 +233,7 @@ class Transpose(Op):
         return tuple((dx,))
 
 
-class Reshape(Op):
+class Reshape(Function):
     def forward(self, x: ArrayLike, shape: tuple[int, ...]) -> ArrayLike:
         self.save_to_cache(x.shape)
         y = np.reshape(x, shape)
@@ -245,7 +245,7 @@ class Reshape(Op):
         return tuple((dx,))
 
 
-class Select(Op):
+class Select(Function):
     def forward(self, x: ArrayLike, *, key: Any) -> ArrayLike:
         y = x[key]
         self.save_to_cache(x.shape, key)
@@ -258,7 +258,7 @@ class Select(Op):
         return tuple((dx,))
 
 
-class Concat(Op):
+class Concat(Function):
     def forward(self, *arrays: ArrayLike, dim: int) -> ArrayLike:
         y = np.concatenate(arrays, dim)
         self.save_to_cache(dim, [a.shape[dim] for a in arrays])
@@ -271,7 +271,7 @@ class Concat(Op):
         return tuple(dxs)
 
 
-class Stack(Op):
+class Stack(Function):
     def forward(self, *arrays: ArrayLike | bool, dim: int) -> ArrayLike:
         y = np.stack(arrays, dim)
         self.save_to_cache(dim)
@@ -293,7 +293,7 @@ def _softmax_bwd(y: ArrayLike, dy: ArrayLike, dim: int) -> ArrayLike:
     return y * (dy - (dy * y).sum(dim, keepdims=True))
 
 
-class Softmax(Op):
+class Softmax(Function):
     def forward(self, x: ArrayLike, *, dim: int) -> ArrayLike:
         y = _softmax_fwd(x, dim)
         self.save_to_cache(dim, y)
@@ -305,7 +305,7 @@ class Softmax(Op):
         return tuple((dx,))
 
 
-class MSELoss(Op):
+class MSELoss(Function):
     def forward(self, x: ArrayLike, y: ArrayLike, *, reduction: str) -> ArrayLike:
         diff = x - y
         loss = diff * diff
@@ -325,7 +325,7 @@ def _onehot(x: ArrayLike, n: int, dtype: type):
     return np.eye(n, dtype=dtype)[x]
 
 
-class CrossEntropyLoss(Op):
+class CrossEntropyLoss(Function):
     def forward(
             self, x: ArrayLike, y: ArrayLike, *, eta: float, reduction: str
     ) -> ArrayLike:
@@ -345,7 +345,7 @@ class CrossEntropyLoss(Op):
         return tuple((dx, None))
 
 
-class Dropout(Op):
+class Dropout(Function):
     def forward(self, x: ArrayLike, *, p: float) -> ArrayLike:
         dropout_mask = np.random.rand(x.shape) > p
         y = x * dropout_mask / (1 - p)

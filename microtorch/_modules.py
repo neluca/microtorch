@@ -20,15 +20,15 @@ class Module(ABC):
             if isinstance(value, ModuleList):
                 for module in value:
                     params.extend(module.parameters())
-        return list(set(params))
+        return list(set(params))  # 去重
 
     def train(self):
-        for p in self.parameters():
-            p.requires_grad = True
+        for param in self.parameters():
+            param.requires_grad = True
 
     def eval(self):
-        for p in self.parameters():
-            p.requires_grad = False
+        for param in self.parameters():
+            param.requires_grad = False
 
     @abstractmethod
     def forward(self, *tensors: Tensor) -> Tensor:
@@ -86,6 +86,17 @@ class Module(ABC):
         value = value.clone() if isinstance(value, Tensor) else value
         setattr(self, name, value)
 
+    def num_parameters(self) -> int:
+        return sum(param.size for param in self.parameters())
+
+    def __repr__(self) -> str:
+        s = ""
+        _state = self._state_dict()
+        for key, value in _state.items():
+            s += key
+            s += f" {value.shape}\n"
+        return s
+
 
 class ModuleList(list):
     def __init__(self, modules: Iterable[Module]) -> None:
@@ -109,15 +120,15 @@ class Linear(Module):
         self.bias = bias
 
         k = 1 / math.sqrt(in_dim)
-        self.w = Parameter(uniform(out_dim, in_dim, low=-k, high=k))
-        self.b = (
+        self.weight = Parameter(uniform(out_dim, in_dim, low=-k, high=k))
+        self.bias = (
             None if not bias else Parameter(uniform(out_dim, low=-k, high=k))
         )
 
     def forward(self, x: Tensor):
-        x = x @ self.w.T
+        x = x @ self.weight.T
         if self.bias:
-            x = x + self.b
+            x = x + self.bias
         return x
 
 

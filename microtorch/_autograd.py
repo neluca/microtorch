@@ -31,20 +31,20 @@ class Tensor:
     def __init__(
             self,
             data: ArrayLike,
-            op: Optional[Op] = None,
+            fn: Optional[Function] = None,
             src: Optional[tuple[Optional[Tensor], ...]] = None,
             requires_grad: bool = False
     ) -> None:
         self.data = data if isinstance(data, ArrayLike) else np.asarray(data)
-        self.op = op
+        self.fn = fn
         self.src = src
         self.requires_grad = requires_grad
         self.grad: Optional[ArrayLike] = None
 
     @property
     def name(self) -> str:
-        if self.op is not None:
-            return self.op.name
+        if self.fn is not None:
+            return self.fn.name
         return self.__class__.__name__
 
     @property
@@ -64,7 +64,8 @@ class Tensor:
         return self.data.ndim
 
     def __repr__(self) -> str:
-        return f"tensor({self.data})"
+        suffix = f"grad_fn=<{self.fn.name}>" if self.fn is not None else f"requires_grad={self.requires_grad}"
+        return f"Tensor({self.data}, {suffix})"
 
     def __add__(self, x: Any) -> Tensor:
         return _apply(Add, self, _align(x))
@@ -157,10 +158,10 @@ class Tensor:
         # run backward through traced graph
         node_queue = _computed_node_dfs(self, [], set())
         for node in reversed(node_queue):
-            assert node.op is not None, "Node has no function context."
+            assert node.fn is not None, "Node has no function context."
             assert node.src is not None, "Node has no source nodes."
             assert node.grad is not None, "Node has no grad that is constant."
-            grads = node.op.backward(node.grad)
+            grads = node.fn.backward(node.grad)
             for src_tensor, grad in zip(node.src, grads):
                 if src_tensor is None or not src_tensor.requires_grad:
                     continue
@@ -168,7 +169,7 @@ class Tensor:
                 src_tensor.accumulate_grad(grad)
 
             # clear context of intermediate nodes
-            node.grad, node.op, node.src = None, None, None
+            node.grad, node.fn, node.src = None, None, None
 
     def __hash__(self) -> int:
         return id(self)
@@ -203,7 +204,7 @@ def _align(x: Any) -> Tensor:
     return Tensor(np.asarray(x, dtype=np.float32))
 
 
-def _apply(op_: type(Op), *tensors: Optional[Tensor], **kwargs: Any) -> Tensor:
+def _apply(op_: type(Function), *tensors: Optional[Tensor], **kwargs: Any) -> Tensor:
     tensor_args = [t for t in tensors if t is not None]
     op = op_(kwargs)
 
@@ -212,7 +213,7 @@ def _apply(op_: type(Op), *tensors: Optional[Tensor], **kwargs: Any) -> Tensor:
 
     result_req_grad = any(t.requires_grad for t in tensor_args)
     if _autograd_tracking_active and result_req_grad:
-        return Tensor(data, op=op, src=tensors, requires_grad=True)
+        return Tensor(data, fn=op, src=tensors, requires_grad=True)
 
     return Tensor(data)
 

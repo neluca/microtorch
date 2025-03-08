@@ -13,8 +13,8 @@ def get_node_info(node: Tensor) -> tuple[str, str, str | None]:
     node_name = node.name
     node_data = f"{node.data.shape}"
     node_args = None
-    if node.op is not None and len(node.op.op_args) != 0:
-        op_args = [f"{k}={v}" for k, v in node.op.op_args.items()]
+    if node.fn is not None and len(node.fn.op_args) != 0:
+        op_args = [f"{k}={v}" for k, v in node.fn.op_args.items()]
         node_args = ", ".join(op_args)
     return node_name, node_args, node_data
 
@@ -33,7 +33,7 @@ def get_mermaid_node_style(node: Tensor) -> str:
     node_id = str(id(node))
     if not node.requires_grad:
         fill_color, stroke_color = _node_colors["const"]
-    elif node.op is None:
+    elif node.fn is None:
         fill_color, stroke_color = _node_colors["leaf"]
     else:
         fill_color, stroke_color = _node_colors["op"]
