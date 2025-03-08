@@ -114,20 +114,19 @@ class Sequential(Module):
 
 
 class Linear(Module):
-    def __init__(self, in_dim: int, out_dim: int, bias: bool = True) -> None:
+    def __init__(self, in_dim: int, out_dim: int, req_bias: bool = True) -> None:
         self.in_dim = in_dim
         self.out_dim = out_dim
-        self.bias = bias
 
         k = 1 / math.sqrt(in_dim)
         self.weight = Parameter(uniform(out_dim, in_dim, low=-k, high=k))
         self.bias = (
-            None if not bias else Parameter(uniform(out_dim, low=-k, high=k))
+            None if not req_bias else Parameter(uniform(out_dim, low=-k, high=k))
         )
 
     def forward(self, x: Tensor):
         x = x @ self.weight.T
-        if self.bias:
+        if self.bias is not None:
             x = x + self.bias
         return x
 
@@ -161,26 +160,3 @@ class Softmax(Module):
 
     def forward(self, x: Tensor) -> Tensor:
         return softmax(x, dim=self.dim)
-
-
-class RNN(Module):
-    def __init__(self, in_dim: int, hidden_dim: int, return_seq: bool = False) -> None:
-        self.in_dim = in_dim
-        self.hidden_dim = hidden_dim
-        self.return_seq = return_seq
-
-        self.W_xh = Linear(in_dim, 4 * hidden_dim, bias=False)
-        self.W_hh = Linear(hidden_dim, 4 * hidden_dim)
-
-    def forward(self, x: Tensor) -> Tensor:
-        B, T, _ = x.shape
-        h = []
-        h_t = zeros(B, self.hidden_dim)
-        xh = self.W_xh(x)
-        for t in range(T):
-            xh_t = xh[:, t]
-            hh_t = self.W_hh(h_t)
-            h_t = (xh_t + hh_t).tanh()
-            if self.return_seq:
-                h.append(h_t)
-        return stack(*h, dim=1) if self.return_seq else h_t

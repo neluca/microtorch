@@ -6,18 +6,12 @@ from tools import draw_to_html
 
 class SimpleNN(nn.Module):
     def __init__(self, input_dim, output_dim):
-        # A single linear layer (input_dim -> output_dim).
-        # Mathematically: fc(x) = xW^T + b
-        # where W is weight and b is bias.
         self.fc = nn.Linear(input_dim, output_dim)
-        self.ac = nn.Tanh()
 
     def forward(self, x):
-        # Simply compute xW^T + b without any additional activation.
-        return self.ac(self.fc(x))
+        return self.fc(x)
 
 
-# Create a sample input tensor x with shape (1, 3).
 x = tensor([[-1.0, 0.0, 2.0]])
 
 # Initialize the simple neural network.
@@ -46,11 +40,6 @@ for epoch in range(30):
     loss = mse_loss(y_pred, tensor(y_true))
 
     # --- Backward pass ---
-    # Ultimately we need to compute the gradient of the loss with respect to the weights
-    # Specifically, if Loss = (pred - 1)^2, then:
-    #   dL/d(pred) = 2 * (pred - 1)
-    #   d(pred)/dW = d(xW^T + b) / dW = x^T
-    # By chain rule, dL/dW = dL/d(pred) * d(pred)/dW = [2 * (pred - 1)] * x^T
     loss.backward()
 
     # --- Update weights ---
@@ -63,5 +52,4 @@ gradient = model.fc.parameters()[0].grad
 print("[After Training] Gradients for fc weights:", gradient)
 print("[After Training] layer weights:", weights)
 print("[After Training] layer bias:", bias)
-
-print((x @ weights.T + bias).item())
+print("y_pred: ", (x @ weights.T + bias).item())

@@ -1,12 +1,13 @@
 # microtorch
-**microtorch** is a deep learning library created from scratch based on **the principle of first principles**, inspired by my other project [regrad](https://github.com/neluca/regrad). This library originates from a simple automatic differentiation engine and uses this engine to build and train complex neural networks. It aims to reveal the underlying principles and mechanisms of building deep learning models by demonstrating every detail and reducing the abstraction found in shiny machine learning libraries like`PyTorch`. An automatic differentiation engine is a tool for automatically computing the derivatives of functions, which is crucial in deep learning because the training process of neural networks requires calculating the gradients of the loss function with respect to model parameters, and the automatic differentiation engine can efficiently accomplish this task.
 
-- Prioritizing learning and transparency over optimization;
-- The `API` interface is very similar to `Pytorch`;
-- Minimal third-party dependencies; the core relies only on `numpy`, and `pytorch` is used only for unit testing to verify the correctness of gradient calculations;
-- All operator structures are clear and easy to understand.
+**microtorch**是以**第一性原理**为准则，从零开始创建一个深度学习库，它参考自我的另一个项目[regrad](https://github.com/neluca/regrad)。该库来自于一个简单的自动微分引擎，并使用该库来构建和训练复杂的神经网络。它旨在通过展示每一个细节并减少像`PyTorch`这样闪亮的机器学习库所具有的抽象性，来揭示构建深度学习模型的底层原理和工作机制。自动微分引擎是一种用于自动计算函数导数的工具，它在深度学习中非常重要，因为神经网络的训练过程需要计算损失函数关于模型参数的梯度，而自动微分引擎可以高效地完成这一任务。
 
-### Usage Example
+- 优先考虑学习和透明度，而不是过度关注优化；
+- `API`接口与`Pytorch`非常相似；
+- 最小第三方依赖，核心只依赖`numpy`，`pytorch`仅用于单元测试，验证梯度计算的正确性；
+- 所有算子结构清晰，十分便于理解。
+
+### 使用举例
 
 ```python
 from microtorch import tensor, mse_loss
@@ -76,13 +77,13 @@ Epoch 29: 0.999997422501613
 y_pred:  0.9999983504010324
 ```
 
-The computational graph of the model is as follows:
+模型的计算图如下：
 
 ![model](./model.png)
 
-### Running tests
+### 单元测试
 
-To run the unit tests you will have to install [PyTorch](https://pytorch.org/), which the tests use as a reference for verifying the correctness of the calculated gradients. Then simply:
+运行单元测试需要安装[PyTorch](https://pytorch.org/)库，用于验证梯度计算的正确性。
 
 ```bash
 python -m pytest
