@@ -6,15 +6,16 @@ FanMode = Literal["fan_in", "fan_out"]
 
 
 def _calculate_fan_in_and_fan_out(*shape: int) -> tuple[int, int]:
+    assert len(shape) != 1, f"Tensor with dims {shape} is not supported. Must be at least 2D."
+
     if len(shape) == 2:
         fan_in = shape[0]
         fan_out = shape[1]
-    elif len(shape) in [3, 4, 5]:
+    else:
         kernel_prod = reduce(lambda x, y: x * y, shape[2:], 1)
         fan_in = shape[1] * kernel_prod
         fan_out = shape[0] * kernel_prod
-    else:
-        raise ValueError(f"Tensor with dims {shape} is not supported. Must be at least 2D.")
+
     return fan_in, fan_out
 
 
@@ -31,8 +32,8 @@ def xavier_normal(*shape: int, gain: float = 1.0, requires_grad: bool = False) -
 
 
 def kaiming_uniform(*shape: int, mode: FanMode = "fan_in", requires_grad: bool = False) -> Tensor:
-    if mode not in {"fan_in", "fan_out"}:
-        raise ValueError("mode must be either 'fan_in' or 'fan_out'.")
+    assert mode in {"fan_in", "fan_out"}, "mode must be either 'fan_in' or 'fan_out'."
+
     fan_in, fan_out = _calculate_fan_in_and_fan_out(*shape)
     fan = fan_in if mode == "fan_in" else fan_out
     bound = (6 / fan) ** 0.5
@@ -40,8 +41,8 @@ def kaiming_uniform(*shape: int, mode: FanMode = "fan_in", requires_grad: bool =
 
 
 def kaiming_normal(*shape: int, mode: FanMode = "fan_in", requires_grad: bool = False) -> Tensor:
-    if mode not in {"fan_in", "fan_out"}:
-        raise ValueError("mode must be either 'fan_in' or 'fan_out'.")
+    assert mode in {"fan_in", "fan_out"}, "mode must be either 'fan_in' or 'fan_out'."
+
     fan_in, fan_out = _calculate_fan_in_and_fan_out(*shape)
     fan = fan_in if mode == "fan_in" else fan_out
     std = (2 / fan) ** 5
