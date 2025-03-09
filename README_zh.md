@@ -1,4 +1,4 @@
-# microtorch
+# microtorch[![unit_test](https://github.com/neluca/microtorch/actions/workflows/unit_test.yaml/badge.svg)](https://github.com/neluca/microtorch/actions/workflows/unit_test.yaml) 
 
 **microtorch**是以**第一性原理**为准则，从零开始创建一个深度学习库，它参考自我的另一个项目[regrad](https://github.com/neluca/regrad)。该库来自于一个简单的自动微分引擎，并使用该库来构建和训练复杂的神经网络。它旨在通过展示每一个细节并减少像`PyTorch`这样闪亮的机器学习库所具有的抽象性，来揭示构建深度学习模型的底层原理和工作机制。自动微分引擎是一种用于自动计算函数导数的工具，它在深度学习中非常重要，因为神经网络的训练过程需要计算损失函数关于模型参数的梯度，而自动微分引擎可以高效地完成这一任务。
 

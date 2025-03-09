@@ -1,4 +1,7 @@
-# microtorch
+# microtorch[![unit_test](https://github.com/neluca/microtorch/actions/workflows/unit_test.yaml/badge.svg)](https://github.com/neluca/microtorch/actions/workflows/unit_test.yaml) 
+
+[中文](./README_zh.md)
+
 **microtorch** is a deep learning library created from scratch based on **the principle of first principles**, inspired by my other project [regrad](https://github.com/neluca/regrad). This library originates from a simple automatic differentiation engine and uses this engine to build and train complex neural networks. It aims to reveal the underlying principles and mechanisms of building deep learning models by demonstrating every detail and reducing the abstraction found in shiny machine learning libraries like`PyTorch`. An automatic differentiation engine is a tool for automatically computing the derivatives of functions, which is crucial in deep learning because the training process of neural networks requires calculating the gradients of the loss function with respect to model parameters, and the automatic differentiation engine can efficiently accomplish this task.
 
 - Prioritizing learning and transparency over optimization;
